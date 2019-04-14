@@ -5,6 +5,7 @@
  *
  * @change 20190414
  * - 数据库支持PHP7.x（彻底使用另一种方法）
+ * - 增加 mysqli 方式连接数据库（也全自动）
  * - 新增 select() 方法，直接获取所有内容
  *
  * @change 20181217
@@ -40,7 +41,7 @@
 	define("MOD2", 100000);  // 秘钥2
 	define("LOW", 100);      // 秘钥3
 
-	$VERSION_NEW_MYSQL = true;
+	$VERSION_MYSQL = 1;
 
 	$userID = "";                // 全局用户ID
 	$version = seize("version"); // 应用版本
@@ -330,39 +331,45 @@
 ?><?php // 数据库操作
 	function connect_sql() // 连接数据库
 	{
-		global $con, $is_connected, $VERSION_NEW_MYSQL;
+		global $con, $is_connected, $VERSION_MYSQL;
 		if ($is_connected) // 避免多次连接
 		{ return NULL; }
-		if ($VERSION_NEW_MYSQL)
+		if ($VERSION_MYSQL === 1)
 			$con = new mysqli(MySQL_servername,MySQL_username,MySQL_password);
+		else if ($VERSION_MYSQL === 2)
+			$con = mysqli_connect(MySQL_servername, MySQL_username, MySQL_password);
 		else
 			$con = mysqli_connect(MySQL_servername, MySQL_username, MySQL_password);
 		if (!$con)
 		{ die("数据库连接失败"); }
 		
-		/*if ($VERSION_NEW_MYSQL)
+		/*if ($VERSION_MYSQL === 1)
 			$con->query("set names 'utf8'");
 		else
 			mysql_query("SET NAMES 'utf8'");*/
 
 		$is_connected = 1;
 		// 选择数据库
-		if ($VERSION_NEW_MYSQL)
+		if ($VERSION_MYSQL === 1)
 			$con->select_db(MySQL_database);
+		else if ($VERSION_MYSQL === 2)
+			mysqli_select_db($con, MySQL_database);
 		else
 			mysql_select_db(MySQL_database, $con);
 		return $con;
 	}
 	function query($sql, $err_s = "") // 查询语句
 	{
-		global $con, $is_connected, $VERSION_NEW_MYSQL;
+		global $con, $is_connected, $VERSION_MYSQL;
 		if (!$is_connected)
 		{
 			connect_sql();
 			$is_connected = 1;
 		}
-		if ($VERSION_NEW_MYSQL)
+		if ($VERSION_MYSQL === 1)
 			$result = $con->query($sql);
+		else if ($VERSION_MYSQL === 2)
+			$result = mysqli_query($con, $sql);
 		else
 			$result = mysql_query($sql, $con);
 		if ($err_s && !$result) // 输出错误信息
@@ -384,20 +391,24 @@
 	}
 	function row($sql) // 查询一行，数据是否存在
 	{
-		global $con, $is_connected, $VERSION_NEW_MYSQL;
+		global $con, $is_connected, $VERSION_MYSQL;
 		if (!$is_connected)
 		{
 			connect_sql();
 			$is_connected = 1;
 		}
-		if ($VERSION_NEW_MYSQL)
+		if ($VERSION_MYSQL === 1)
 			$result = $conn->query($sql);
+		else if ($VERSION_MYSQL === 2)
+			$result = mysqli_query($con, $sql);
 		else
 			$result = mysql_query($sql);
 		if ($result)
 		{
-			if ($VERSION_NEW_MYSQL)
+			if ($VERSION_MYSQL === 1)
 				$row = $result->fetch_assoc();
+			else if ($VERSION_MYSQL === 2)
+				$row = mysqli_fetch_array($result);
 			else
 				$row = mysql_fetch_array($result);
 			return $row;
@@ -410,30 +421,39 @@
 
 	function select($sql)
 	{
-		global $con, $is_connected, $VERSION_NEW_MYSQL;
+		global $con, $is_connected, $VERSION_MYSQL;
 		if (!$is_connected)
 		{
 			connect_sql();
 			$is_connected = 1;
 		}
-		if ($VERSION_NEW_MYSQL)
+		if ($VERSION_MYSQL === 1)
 			$result = $con->query($sql);
+		else if ($VERSION_MYSQL === 2)
+			$result = mysqli_query($con, $sql);
 		else
 			$result = mysql_query($sql);
 
 		$data=array();
-		if ($VERSION_NEW_MYSQL)
+		if ($VERSION_MYSQL === 1)
 		{
-			while ($tmp=$result->fetch_assoc())
+			while ($_tmp=$result->fetch_assoc())
 			{
-			    $data[]=$tmp;
+			    $data[]=$_tmp;
+			}
+		}
+		else if ($VERSION_MYSQL === 2)
+		{
+			while ($_tmp = mysqli_fetch_array($result))
+			{
+				$data[] = $_tmp;
 			}
 		}
 		else
 		{
-			while ($row = mysql_fetch_array($result))
+			while ($_tmp = mysql_fetch_array($result))
 			{
-				$data[] = $tmp;
+				$data[] = $_tmp;
 			}
 		}
 		return $data;
