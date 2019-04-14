@@ -2,8 +2,12 @@
 /**
  * @author 命燃芯乂
  * @create 2017
+ *
+ * @change 20190414
+ * - 数据库支持PHP7.x
+ * - 新增 select() 方法，直接获取所有内容
+ *
  * @change 20181217
- * 更新内容：
  * - 增加一部分注释
  * - 交换模块顺序（表单输入和安全控制）
  * - 修改数据库方法名，更加简短（可能产生冲突）
@@ -19,31 +23,27 @@
 <?php
 	require "public_module.php";
 	php_start();
-
 	#code
-
 	php_end();
 ?>
-*/ ?><?php // 宏定义    //
+*/ ?><?php // 宏定义
 	header("Content-type: text/html; charset=utf-8"); // 允许中文
 
 	define("MySQL_servername", "localhost");
 	define("MySQL_username", "root");
 	define("MySQL_password", "root");
-	define("MySQL_database", "poorrow");
+	define("MySQL_database", "test");
 	
-	define("T", "<STATE>OK</STATE>");
-	define("F", "<STATE>Bad</STATE>");
+	define("T", "<STATE>OK</STATE>");  // 成功返回状态文本
+	define("F", "<STATE>Bad</STATE>"); // 失败返回状态文本
+	define("MOD", 886);      // 秘钥1
+	define("MOD2", 100000);  // 秘钥2
+	define("LOW", 100);      // 秘钥3
 
-	define("MOD", 886);
-	define("MOD2", 100000);
-	define("LOW", 100);
-
-	$userID = "";
-	$version = seize("version");
-
-	$con = NULL;
-	$is_connected = 0;
+	$userID = "";                // 全局用户ID
+	$version = seize("version"); // 应用版本
+	$con = NULL;                 // 数据库连接
+	$is_connected = 0;           // 数据库是否连接
 ?><?php // 全局控制函数
 	/**
 	 * 如果需要安全验证，则使用下面的函数
@@ -54,13 +54,11 @@
 		verify(); // 验证安全验证码
 		reverify(); // 返回安全验证码
 	}
-
 	function php_end() // 结束操作：关闭数据库
 	{
 		global $is_connected, $con;
 		if ($is_connected) mysql_close($con); // 若数据库已连接，则关闭
 	}
-
 ?><?php // 安全验证操作
 	/**
 	 * 判断能否登录（通过userID和passsword）
@@ -71,7 +69,6 @@
 		$sql = "select * from users where userID = '$userID' && password = '$password'";
 		die_if(!row($sql), "用户名或者密码错误");
 	}
-
 	/**
 	 * 验证秘钥
 	 * 判断版本是否过期
@@ -96,7 +93,6 @@
 			fuck();
 		}
 	}
-
 	/**
 	 * 输出秘钥，格式化XML，给客户端验证
 	 */
@@ -104,7 +100,6 @@
 	{
 		echo "<verify>" . verify_encode() . "</verify>\n";
 	}
-
 	/**
 	 * 解密收到的密码
 	 * @param  string $s 加密后的秘钥
@@ -114,12 +109,9 @@
 	{
 		global $version;
 		date_default_timezone_set('PRC'); // 临时设置成中国时区
-
 		// 解密操作，已屏蔽
-
 		return $res;
 	}
-
 	/**
 	 * 产生一串加密后的秘钥
 	 * @return string 加密后的字符串
@@ -133,7 +125,6 @@
 		
 		return $ans;
 	}
-
 ?><?php // 获取表单操作
 	/**
 	 * 获取表单操作并且进行安全性操作
@@ -156,7 +147,6 @@
 			return 1;
 		}
 	}
-
 	function seizeor() // 多个表单有一个就行了
 	{
 		$args = func_get_args();
@@ -176,7 +166,6 @@
 			return NULL;
 		}
 	}
-
 	function seize0($s, $blank = 0) // 获取必须存在且非空的表单，如果没有则强制退出
 	{
 		if (isset($_REQUEST[$s]) && $_REQUEST[$s] != "")
@@ -186,7 +175,6 @@
 		else
 			die ;
 	}
-
 	function seize1($s, $blank = 0) // 获取一个表单
 	{
 		if (isset($_REQUEST[$s]))
@@ -196,7 +184,6 @@
 		else
 			return NULL;
 	}
-
 	function seize2($s, &$a, $blank = 0) // 获取表单并引用赋值
 	{
 		if (isset($_REQUEST[$s]))
@@ -206,7 +193,6 @@
 		else
 			return ($a = NULL);
 	}
-
 	function seizeval($s, $blank = 0) // 获取一个非空表单，否则为NULL
 	{
 		if (isset($_REQUEST[$s]) && $_REQUEST[$s] != "")
@@ -216,7 +202,6 @@
 		else
 			return NULL;
 	}
-
 	function is_set($s) // 有没有存在对应的内容
 	{
 		if (isset($_REQUEST[$s]))
@@ -225,7 +210,6 @@
 			return 2;
 		else return 0;
 	}
-
 	function enull($s) // 表单为空时也是NULL
 	{
 		if ($s == NULL || trim($s) == "")
@@ -233,18 +217,15 @@
 		else
 			return $s;
 	}
-
 	function fuck($s = "") // 全部操作退出
 	{
 		die("00000");
 	}
-
 ?><?php // 输出控制操作
 	function println($s) // 输出一行
 	{
 		echo $s . "\n";
 	}
-
 	/**
 	 * 输出某个操作的结果
 	 * @param  string $b 操作结果
@@ -267,7 +248,6 @@
 			return 0;
 		}
 	}
-
 	/**
 	 * 如果表达式成立，则退出，并输出错误信息
 	 * @param  bool $b 操作返回结果
@@ -280,7 +260,6 @@
 			die($s);;
 		}
 	}
-
 	/**
 	 * 如果表达式成立，则退出，输出 F 与 XML格式的错误原因
 	 * 用于强制退出程序的最后一步
@@ -295,7 +274,6 @@
 			die(XML($s, "REASON")); // <REASON>$s</REASON>
 		}
 	}
-
 ?><?php // 各种取值操作
 	/**
 	 * 针对输入格式进行格式化，防止SQL注入
@@ -312,7 +290,6 @@
 		//$s = htmlspecialchars($s); // 防注入
 		return $s;
 	}
-
 	function get_IP() // 获取真实的IP
 	{
 		$ip = "";
@@ -342,36 +319,38 @@
 		}
 		return $ip;
 	}
-
 	function get_time() // 获取当前时间文本
 	{
 		date_default_timezone_set('PRC'); // 临时设置成中国时区
 		$time = date("y-m-d h:i:s", time());
 		return $time;
 	}
-
 ?><?php // 数据库操作
-
 	function connect_sql() // 连接数据库
 	{
 		global $con, $is_connected;
 		if ($is_connected) // 避免多次连接
 		{ return NULL; }
-
-		$con = mysql_connect(MySQL_servername, MySQL_username, MySQL_password);
+		if (PHP_VERSION >= '7.0')
+			$con = new mysqli(MySQL_servername,MySQL_username,MySQL_password);
+		else
+			$con = mysqli_connect(MySQL_servername, MySQL_username, MySQL_password);
 		if (!$con)
 		{ die("数据库连接失败"); }
 		
-//		mysql_query("SET NAMES 'utf8'");
+		/*if (PHP_VERSION >= '7.0')
+			$con->query("set names 'utf8'");
+		else
+			mysql_query("SET NAMES 'utf8'");*/
 
 		$is_connected = 1;
-
 		// 选择数据库
-		mysql_select_db(MySQL_database, $con);
-
+		if (PHP_VERSION >= '7.0')
+			$con->select_db(MySQL_database);
+		else
+			mysql_select_db(MySQL_database, $con);
 		return $con;
 	}
-
 	function query($sql, $err_s = "") // 查询语句
 	{
 		global $con, $is_connected;
@@ -380,13 +359,14 @@
 			connect_sql();
 			$is_connected = 1;
 		}
-
-		$result = mysql_query($sql, $con);
+		if (PHP_VERSION >= '7.0')
+			$result = $con->query($sql);
+		else
+			$result = mysql_query($sql, $con);
 		if ($err_s && !$result) // 输出错误信息
 			echo $err_s . ' ' . mysql_error() . '\n';
 		return $result;
 	}
-
 	function query2($sql, $err = "")
 	{
 		if (!query($sql))
@@ -400,7 +380,6 @@
 			die;
 		}
 	}
-
 	function row($sql) // 查询一行，数据是否存在
 	{
 		global $con, $is_connected;
@@ -409,10 +388,16 @@
 			connect_sql();
 			$is_connected = 1;
 		}
-
-		if ($result = mysql_query($sql))
+		if (PHP_VERSION >= '7.0')
+			$result = $conn->query($sql);
+		else
+			$result = mysql_query($sql);
+		if ($result)
 		{
-			$row = mysql_fetch_array($result);
+			if (PHP_VERSION >= '7.0')
+				$row = $result->fetch_assoc();
+			else
+				$row = mysql_fetch_array($result);
 			return $row;
 		}
 		else
@@ -420,27 +405,55 @@
 			return NULL;
 		}
 	}
+
+	function select($sql)
+	{
+		global $con, $is_connected;
+		if (!$is_connected)
+		{
+			connect_sql();
+			$is_connected = 1;
+		}
+		if (PHP_VERSION >= '7.0')
+			$result = $con->query($sql);
+		else
+			$result = mysql_query($sql);
+
+		$data=array();
+		if (PHP_VERSION >= '7.0')
+		{
+			while ($tmp=$result->fetch_assoc())
+			{
+			    $data[]=$tmp;
+			}
+		}
+		else
+		{
+			while ($row = mysql_fetch_array($result))
+			{
+				$data[] = $tmp;
+			}
+		}
+		return $data;
+	}
 	
 ?><?php // 字符串操作
 	function XML($str, $tag)
 	{
 		return "<" . $tag . ">" . $str . "</" . $tag . ">";
 	}
-
 	function getXML($str, $tag)
 	{
 		$left = "<" . $tag . ">";
 		$right = "</" . $tag . ">";
 		return getMid($str, $left, $right);
 	}
-
 	function getXMLs($str, $tag)
 	{
 		$left = "<" . $tag . ">";
 		$right = "</" . $tag . ">";
 		return getMid($str, $left, $right);
 	}
-
 	function getMid($str, $left, $right)
 	{
 		$pos = strpos($str, $left);
@@ -450,7 +463,6 @@
 		if ($pos2 === false) $pos2 = strlen($str);
 		return substr($str, $pos, $pos2-$pos);
 	}
-
 	function getMids($str, $left, $right)
 	{
 		$ans = array();
