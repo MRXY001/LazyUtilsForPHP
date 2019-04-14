@@ -4,7 +4,7 @@
  * @create 2017
  *
  * @change 20190414
- * - 数据库支持PHP7.x
+ * - 数据库支持PHP7.x（彻底使用另一种方法）
  * - 新增 select() 方法，直接获取所有内容
  *
  * @change 20181217
@@ -39,6 +39,8 @@
 	define("MOD", 886);      // 秘钥1
 	define("MOD2", 100000);  // 秘钥2
 	define("LOW", 100);      // 秘钥3
+
+	$VERSION_NEW_MYSQL = true;
 
 	$userID = "";                // 全局用户ID
 	$version = seize("version"); // 应用版本
@@ -328,24 +330,24 @@
 ?><?php // 数据库操作
 	function connect_sql() // 连接数据库
 	{
-		global $con, $is_connected;
+		global $con, $is_connected, $VERSION_NEW_MYSQL;
 		if ($is_connected) // 避免多次连接
 		{ return NULL; }
-		if (PHP_VERSION >= '7.0')
+		if ($VERSION_NEW_MYSQL)
 			$con = new mysqli(MySQL_servername,MySQL_username,MySQL_password);
 		else
 			$con = mysqli_connect(MySQL_servername, MySQL_username, MySQL_password);
 		if (!$con)
 		{ die("数据库连接失败"); }
 		
-		/*if (PHP_VERSION >= '7.0')
+		/*if ($VERSION_NEW_MYSQL)
 			$con->query("set names 'utf8'");
 		else
 			mysql_query("SET NAMES 'utf8'");*/
 
 		$is_connected = 1;
 		// 选择数据库
-		if (PHP_VERSION >= '7.0')
+		if ($VERSION_NEW_MYSQL)
 			$con->select_db(MySQL_database);
 		else
 			mysql_select_db(MySQL_database, $con);
@@ -353,13 +355,13 @@
 	}
 	function query($sql, $err_s = "") // 查询语句
 	{
-		global $con, $is_connected;
+		global $con, $is_connected, $VERSION_NEW_MYSQL;
 		if (!$is_connected)
 		{
 			connect_sql();
 			$is_connected = 1;
 		}
-		if (PHP_VERSION >= '7.0')
+		if ($VERSION_NEW_MYSQL)
 			$result = $con->query($sql);
 		else
 			$result = mysql_query($sql, $con);
@@ -382,19 +384,19 @@
 	}
 	function row($sql) // 查询一行，数据是否存在
 	{
-		global $con, $is_connected;
+		global $con, $is_connected, $VERSION_NEW_MYSQL;
 		if (!$is_connected)
 		{
 			connect_sql();
 			$is_connected = 1;
 		}
-		if (PHP_VERSION >= '7.0')
+		if ($VERSION_NEW_MYSQL)
 			$result = $conn->query($sql);
 		else
 			$result = mysql_query($sql);
 		if ($result)
 		{
-			if (PHP_VERSION >= '7.0')
+			if ($VERSION_NEW_MYSQL)
 				$row = $result->fetch_assoc();
 			else
 				$row = mysql_fetch_array($result);
@@ -408,19 +410,19 @@
 
 	function select($sql)
 	{
-		global $con, $is_connected;
+		global $con, $is_connected, $VERSION_NEW_MYSQL;
 		if (!$is_connected)
 		{
 			connect_sql();
 			$is_connected = 1;
 		}
-		if (PHP_VERSION >= '7.0')
+		if ($VERSION_NEW_MYSQL)
 			$result = $con->query($sql);
 		else
 			$result = mysql_query($sql);
 
 		$data=array();
-		if (PHP_VERSION >= '7.0')
+		if ($VERSION_NEW_MYSQL)
 		{
 			while ($tmp=$result->fetch_assoc())
 			{
