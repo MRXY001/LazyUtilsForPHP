@@ -7,6 +7,7 @@
  * - 数据库支持PHP7.x（彻底使用另一种方法）
  * - 增加 mysqli 方式连接数据库（也全自动）
  * - 新增 select() 方法，直接获取所有内容
+ * - 新增 query2() 输出数据库查询错误信息
  *
  * @change 20181217
  * - 增加一部分注释
@@ -33,7 +34,7 @@
 	define("MySQL_servername", "localhost");
 	define("MySQL_username", "root");
 	define("MySQL_password", "root");
-	define("MySQL_database", "test");
+	define("MySQL_database", "parttime");
 	
 	define("T", "<STATE>OK</STATE>");  // 成功返回状态文本
 	define("F", "<STATE>Bad</STATE>"); // 失败返回状态文本
@@ -384,6 +385,8 @@
 			echo "<REASON>";
 			if ($err != "")
 				echo $err . ' ';
+			else if ($err == 0)
+				echo mysqli_error($con);
 			echo '<MYSQ_EOORO:>' . mysql_error();
 			echo "</REASON>";
 			die;
@@ -437,10 +440,11 @@
 		$data=array();
 		if ($VERSION_MYSQL === 1)
 		{
-			while ($_tmp=$result->fetch_assoc())
+			/*while ($_tmp=$result->fetch_assoc())
 			{
 			    $data[]=$_tmp;
-			}
+			}*/
+			$data = $result->fetch_all();
 		}
 		else if ($VERSION_MYSQL === 2)
 		{
