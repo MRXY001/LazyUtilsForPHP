@@ -3,7 +3,7 @@
  * @author 命燃芯乂
  * @create 2017
  *
- * @change 20190414
+ * @change 20190415
  * - 数据库支持PHP7.x（彻底使用另一种方法）
  * - 增加 mysqli 方式连接数据库（也全自动）
  * - 新增 select() 方法，直接获取所有内容
@@ -398,7 +398,7 @@
 			$is_connected = 1;
 		}
 		if ($VERSION_MYSQL === 1)
-			$result = $conn->query($sql);
+			$result = $con->query($sql);
 		else if ($VERSION_MYSQL === 2)
 			$result = mysqli_query($con, $sql);
 		else
