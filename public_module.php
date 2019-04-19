@@ -7,7 +7,6 @@
  * - 数据库支持PHP7.x（彻底使用另一种方法）
  * - 增加 mysqli 方式连接数据库（也全自动）
  * - 新增 select() 方法，直接获取所有内容
- * - 新增 query2() 输出数据库查询错误信息
  *
  * @change 20181217
  * - 增加一部分注释
@@ -436,15 +435,15 @@
 			$result = mysqli_query($con, $sql);
 		else
 			$result = mysql_query($sql);
-
+		// !如果查询出错，$result会返回 none
 		$data=array();
 		if ($VERSION_MYSQL === 1)
 		{
-			/*while ($_tmp=$result->fetch_assoc())
+			while ($_tmp=$result->fetch_assoc())
 			{
 			    $data[]=$_tmp;
-			}*/
-			$data = $result->fetch_all();
+			}
+			// $data = $result->fetch_all(); // 这个返回的是数组下标，每列下标都是整数型
 		}
 		else if ($VERSION_MYSQL === 2)
 		{
