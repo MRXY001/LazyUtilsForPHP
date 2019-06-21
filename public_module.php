@@ -3,6 +3,9 @@
  * @author 命燃芯乂
  * @create 2017
  *
+ * @change 2019.6.21
+ * - 优化防注入
+ *
  * @change 20190415
  * - 数据库支持PHP7.x（彻底使用另一种方法）
  * - 增加 mysqli 方式连接数据库（也全自动）
@@ -33,7 +36,7 @@
 	define("MySQL_servername", "localhost");
 	define("MySQL_username", "root");
 	define("MySQL_password", "root");
-	define("MySQL_database", "parttime");
+	define("MySQL_database", "mzfy");
 	
 	define("T", "<STATE>OK</STATE>");  // 成功返回状态文本
 	define("F", "<STATE>Bad</STATE>"); // 失败返回状态文本
@@ -289,8 +292,8 @@
 		if (!$blank)
 			$s = trim($s); // 去空格
 		$s = stripslashes($s); // 去转义
-		$s = str_replace("'", "''", $s);
-		//$s = htmlspecialchars($s); // 防注入
+		// $s = str_replace("'", "''", $s);
+		$s = htmlspecialchars($s); // 防注入
 		return $s;
 	}
 	function get_IP() // 获取真实的IP
@@ -358,24 +361,25 @@
 			mysql_select_db(MySQL_database, $con);
 		return $con;
 	}
+
 	function query($sql, $err_s = "") // 查询语句
 	{
 		global $con, $is_connected, $VERSION_MYSQL;
 		if (!$is_connected)
-		{
 			connect_sql();
-			$is_connected = 1;
-		}
+
 		if ($VERSION_MYSQL === 1)
 			$result = $con->query($sql);
 		else if ($VERSION_MYSQL === 2)
 			$result = mysqli_query($con, $sql);
 		else
 			$result = mysql_query($sql, $con);
+
 		if ($err_s && !$result) // 输出错误信息
 			echo $err_s . ' ' . mysql_error() . '\n';
 		return $result;
 	}
+
 	function query2($sql, $err = "")
 	{
 		if (!query($sql))
@@ -391,6 +395,7 @@
 			die;
 		}
 	}
+
 	function row($sql) // 查询一行，数据是否存在
 	{
 		global $con, $is_connected, $VERSION_MYSQL;
@@ -437,29 +442,54 @@
 			$result = mysql_query($sql);
 		// !如果查询出错，$result会返回 none
 		$data=array();
-		if ($VERSION_MYSQL === 1)
+		if ($result)
 		{
-			while ($_tmp=$result->fetch_assoc())
+			if ($VERSION_MYSQL === 1)
 			{
-			    $data[]=$_tmp;
+				// 每行下标整数，每列下标是字段名
+				while ($_tmp=$result->fetch_assoc())
+				    $data[]=$_tmp;
+
+				// 这个返回的是整数下标的二维数组，每行每列下标都是整数型
+				// $data = $result->fetch_all();
 			}
-			// $data = $result->fetch_all(); // 这个返回的是数组下标，每列下标都是整数型
-		}
-		else if ($VERSION_MYSQL === 2)
-		{
-			while ($_tmp = mysqli_fetch_array($result))
+			else if ($VERSION_MYSQL === 2)
 			{
-				$data[] = $_tmp;
+				while ($_tmp = mysqli_fetch_array($result))
+				{
+					$data[] = $_tmp;
+				}
 			}
-		}
-		else
-		{
-			while ($_tmp = mysql_fetch_array($result))
+			else
 			{
-				$data[] = $_tmp;
+				while ($_tmp = mysql_fetch_array($result))
+				{
+					$data[] = $_tmp;
+				}
 			}
 		}
+		
 		return $data;
+	}
+
+	function str2sql($str)
+	{
+		// 如果没有进行 magic_quotes_gpc ，则进行字符串过滤
+		if (!get_magic_quotes_gpc())
+		{
+			$str = addslashes($str);
+		}
+		$str = str_replace("_", "\_", $str);
+		$str = str_replace("%", "\%", $str);
+		return $str;
+	}
+
+	function sql2str($sql)
+	{
+		$str = stripslashes($sql);
+		$str = str_replace("\_", "_", $str);
+		$str = str_replace("\%", "%", $str);
+		return $str;
 	}
 	
 ?><?php // 字符串操作
