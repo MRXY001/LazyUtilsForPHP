@@ -3,6 +3,10 @@
  * @author 命燃芯乂
  * @create 2017
  *
+ * @change 20190802
+ * - 优化数据库各版本操作
+ * - 添加两个常用的可选版本数据库方法（下一行、错误）
+ *
  * @change 2019.6.21
  * - 优化防注入
  *
@@ -40,10 +44,16 @@
 	
 	define("T", "<STATE>OK</STATE>");  // 成功返回状态文本
 	define("F", "<STATE>Bad</STATE>"); // 失败返回状态文本
-	define("MOD", 1);      // 秘钥1
-	define("MOD2", 2);  // 秘钥2
-	define("LOW", 3);      // 秘钥3
+	define("MOD", 1);
+	define("MOD2", 2);
+	define("LOW", 3);
 
+	/**
+	 * 设置数据库连接方式
+	 * 1:7.x（建议）
+	 * 2：7.x
+	 * 3：5.x
+	 */
 	$VERSION_MYSQL = 1;
 
 	$userID = "";                // 全局用户ID
@@ -57,13 +67,13 @@
 	 */
 	function php_start() // 开启操作：安全验证
 	{
-		verify(); // 验证安全验证码
+		// verify(); // 验证安全验证码
 		reverify(); // 返回安全验证码
 	}
 	function php_end() // 结束操作：关闭数据库
 	{
 		global $is_connected, $con;
-		if ($is_connected) mysql_close($con); // 若数据库已连接，则关闭
+		// if ($is_connected) mysql_close($con); // 若数据库已连接，则关闭（默认不需要，并且这句话在新版本PHP中报错）
 	}
 ?><?php // 安全验证操作
 	/**
@@ -115,7 +125,7 @@
 	{
 		global $version;
 		date_default_timezone_set('PRC'); // 临时设置成中国时区
-		// 解密操作，已屏蔽
+
 		return $res;
 	}
 	/**
@@ -126,8 +136,6 @@
 	{
 		global $version;
 		date_default_timezone_set('PRC'); // 临时设置成中国时区
-		
-		// 加密操作，已屏蔽
 		
 		return $ans;
 	}
@@ -342,7 +350,7 @@
 		else if ($VERSION_MYSQL === 2)
 			$con = mysqli_connect(MySQL_servername, MySQL_username, MySQL_password);
 		else
-			$con = mysqli_connect(MySQL_servername, MySQL_username, MySQL_password);
+			$con = mysql_connect(MySQL_servername, MySQL_username, MySQL_password);
 		if (!$con)
 		{ die("数据库连接失败"); }
 		
@@ -382,7 +390,7 @@
 			$result = mysql_query($sql, $con);
 
 		if ($err_s && !$result) // 输出错误信息
-			echo $err_s . ' ' . mysql_error() . '\n';
+			echo $err_s . ' ' . error_sql() . '\n';
 		return $result;
 	}
 
@@ -407,7 +415,7 @@
 				echo $err . ' ';
 			else if ($err == 0)
 				echo mysqli_error($con);
-			echo '<MYSQ_EOORO:>' . mysql_error();
+			echo '<MYSQ_EOORO:>' . error_sql();
 			echo "</REASON>";
 			die;
 		}
@@ -422,10 +430,7 @@
 	{
 		global $con, $is_connected, $VERSION_MYSQL;
 		if (!$is_connected)
-		{
 			connect_sql();
-			$is_connected = 1;
-		}
 		if ($VERSION_MYSQL === 1)
 			$result = $con->query($sql);
 		else if ($VERSION_MYSQL === 2)
@@ -451,6 +456,26 @@
 	function row_sql($sql)
 	{
 		return row($sql);
+	}
+
+	function next_row(&$result)
+	{
+		global $con, $is_connected, $VERSION_MYSQL;
+		if (!$is_connected)
+			connect_sql();
+		if ($result)
+		{
+			if ($VERSION_MYSQL === 1)
+				return $result->fetch_assoc();
+			else if ($VERSION_MYSQL === 2)
+				return mysqli_fetch_array($result);
+			else
+				return mysql_fetch_array($result);
+		}
+		else
+		{
+			return NULL;
+		}
 	}
 
 	/**
@@ -502,6 +527,17 @@
 		}
 		
 		return $data;
+	}
+
+	function error_sql()
+	{
+		global $con, $VERSION_MYSQL;
+		if ($VERSION_MYSQL === 1)
+			return mysqli_error($con);
+		else if ($VERSION_MYSQL === 2)
+			return mysqli_error($con);
+		else
+			return mysql_error();
 	}
 
 	function str2sql($str)
